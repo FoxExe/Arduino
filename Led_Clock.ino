@@ -12,8 +12,8 @@
 #define LCD_UPDATE_DELAY 1000
 #define DHT_UPDATE_DELAY 5000
 
-#define BTN_LEFT	A0
-#define BTN_RIGHT	A1
+#define BTN_UP	A0
+#define BTN_DOWN	A1
 #define BTN_OK		A2
 
 #define DHTPIN 4
@@ -28,7 +28,9 @@ unsigned long btn_next_update;
 unsigned long dht_next_update;
 unsigned char EditPosition = 0;	// uint8_t = 0...255
 unsigned char blinkCount = 0;
+bool ShowInFahrenheit = false;
 char lcdBuff[16];
+float temperature, humidity;
 
 char* months[] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
 
@@ -38,12 +40,14 @@ void setup() {
 	//Serial.begin(57600);
 
 	lcd.begin(16, 2);
+	lcd.clear();
+	lcd.print(F("Loading..."));
 
 	if (!rtc.begin()) {
 		//Serial.println("Couldn't find RTC");
 		lcd.clear();
 		lcd.setCursor(0, 0);
-		lcd.print("RTC Not found");
+		lcd.print(F("RTC Not found"));
 		while (1);
 	}
 
@@ -51,13 +55,13 @@ void setup() {
 		//Serial.println("RTC is NOT running!");
 		lcd.clear();
 		lcd.setCursor(0, 0);
-		lcd.print("RTC Not run");
+		lcd.print(F("RTC Not run"));
 
 		rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
 	}
 
-	pinMode(BTN_LEFT, INPUT_PULLUP);
-	pinMode(BTN_RIGHT, INPUT_PULLUP);
+	pinMode(BTN_UP, INPUT_PULLUP);
+	pinMode(BTN_DOWN, INPUT_PULLUP);
 	pinMode(BTN_OK, INPUT_PULLUP);
 
 	lcd_next_update = LCD_UPDATE_DELAY;
@@ -66,12 +70,14 @@ void setup() {
 	while (millis() < 3000) {
 		delay(100);
 	}
+	temperature = dht.readTemperature(ShowInFahrenheit);
+	humidity = dht.readHumidity();
 }
 
 void PrintTime() {
 	DateTime now = rtc.now();
 
-	//lcd.clear();	Do not clear, only ovewrite. (For DHT sensor)
+	lcd.clear();
 
 	//sprintf(lcdBuff, "%02d/%02d/%04d", now.day(), now.month(), now.year());
 	lcd.setCursor(0, 0);
@@ -81,6 +87,12 @@ void PrintTime() {
 	lcd.setCursor(2, 1);
 	sprintf(lcdBuff, "%02d:%02d:%02d", now.hour(), now.minute(), now.second());
 	lcd.print(lcdBuff);
+
+	lcd.setCursor(12, 0);
+	lcd.print(temperature);
+
+	lcd.setCursor(12, 1);
+	lcd.print(humidity);
 
 	/*
 	lcd.print(now.day());
@@ -144,29 +156,32 @@ void AdjustTime(int8_t state) {
 		case 4: rtc.adjust(now + TimeSpan(0, state, 0, 0)); break;
 		case 5: rtc.adjust(now + TimeSpan(0, 0, state, 0)); break;
 		case 6: rtc.adjust(now + TimeSpan(0, 0, 0, state)); break;
-		default: break;
+		default:
+			ShowInFahrenheit = !ShowInFahrenheit;
+			dht_next_update = millis();	// Update on screen now!
+			break;	// Toggle "Show temperature in fahrenheit"
 	}
 }
 
 // the loop function runs over and over again until power down or reset
 void loop() {
-	if (digitalRead(BTN_LEFT) == LOW)
+	if (digitalRead(BTN_UP) == LOW)
 	{
 		delay(25); // debounce
-		if (digitalRead(BTN_LEFT) == LOW)
+		if (digitalRead(BTN_UP) == LOW)
 		{
-			AdjustTime(-1);
+			AdjustTime(+1);
 			blinkCount = 0;
 			PrintTime();
 			delay(500);
 		}
 	}
 
-	if (digitalRead(BTN_RIGHT) == LOW)
+	if (digitalRead(BTN_DOWN) == LOW)
 	{
 		delay(25); // debounce
-		if (digitalRead(BTN_RIGHT) == LOW) {
-			AdjustTime(+1);
+		if (digitalRead(BTN_DOWN) == LOW) {
+			AdjustTime(-1);
 			blinkCount = 0;
 			PrintTime();
 			delay(500);
@@ -186,18 +201,14 @@ void loop() {
 		}
 	}
 
+	if (millis() > dht_next_update) {
+		temperature = dht.readTemperature(ShowInFahrenheit);
+		humidity = dht.readHumidity();
+		dht_next_update = millis() + DHT_UPDATE_DELAY;
+	}
+
 	if (millis() > lcd_next_update) {
 		PrintTime();
 		lcd_next_update = millis() + LCD_UPDATE_DELAY;
-	}
-
-	if (millis() > dht_next_update) {
-		lcd.setCursor(12, 0);
-		lcd.print(dht.readTemperature());
-
-		lcd.setCursor(12, 1);
-		lcd.print(dht.readHumidity());
-
-		dht_next_update = millis() + DHT_UPDATE_DELAY;
 	}
 }
