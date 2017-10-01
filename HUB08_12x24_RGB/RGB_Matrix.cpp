@@ -1,10 +1,5 @@
 #include "RGB_Matrix.h"
 
-
-uint8_t frame_buffer_r[PANEL_SIZE_X * PANEL_SIZE_Y / 8] = { 0x00, };
-uint8_t frame_buffer_g[PANEL_SIZE_X * PANEL_SIZE_Y / 8] = { 0x00, };
-uint8_t frame_buffer_b[PANEL_SIZE_X * PANEL_SIZE_Y / 8] = { 0x00, };
-
 RGB_Matrix::RGB_Matrix()
 {
 }

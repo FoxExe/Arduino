@@ -21,8 +21,10 @@
 
 */
 
-#define DEBUG
+//#define DEBUG
 #define DEBUG_REPORT 1000
+#define TIMER_DELAY  1000
+
 
 #include "RGB_Matrix.h"
 #include "font.h"
@@ -45,6 +47,8 @@ unsigned long fps_start, fps_stop;
 unsigned int fps_count = 0;
 #endif // DEBUG
 
+unsigned long timer_delay = TIMER_DELAY;
+
 void setup() {
 #ifdef DEBUG
 	Serial.begin(115200);
@@ -53,7 +57,7 @@ void setup() {
 	panel.init(PIN_CLK, PIN_LATCH, PIN_OE, PIN_LINE_A, PIN_LINE_B, PIN_RED, PIN_GREEN, PIN_BLUE);
 	panel.setFont(5, 8, font5x8);
 
-	
+	// Color test pattern
 	panel.drawFillRect(0, 0, 8, 6, panel.COLOR_RED);
 	panel.drawFillRect(8, 0, 8, 6, panel.COLOR_GREEN);
 	panel.drawFillRect(16, 0, 8, 6, panel.COLOR_BLUE);
@@ -72,6 +76,15 @@ void setup() {
 }
 
 void loop() {
+
+	if (millis() > timer_delay) {
+		char buffer[4];
+		panel.drawString(0, 0, itoa(millis() / 1000, buffer, 10), panel.COLOR_GREEN);
+		timer_delay = millis() + TIMER_DELAY - (millis() % TIMER_DELAY);
+	}
+
+
+
 #ifdef DEBUG
 	fps_start = millis();
 #endif // DEBUG
@@ -89,8 +102,8 @@ void loop() {
 		Serial.print(F(" ms. Uptime: "));
 		Serial.print(millis() / 1000);
 		Serial.print(F(" sec\n"));
-		char buffer[4];
 
+		char buffer[4];
 		panel.drawString(0, 0, itoa(millis() / 1000, buffer, 10), panel.COLOR_GREEN);
 
 		fps_count = 0;
