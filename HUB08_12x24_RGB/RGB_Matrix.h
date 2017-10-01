@@ -6,14 +6,6 @@
 #include "WProgram.h"
 #endif
 
-#define abs(a) (((a) < 0) ? -(a) : (a))
-#define swap(a, b)     \
-	{                  \
-		uint8_t t = a; \
-		a = b;         \
-		b = t;         \
-	}
-
 #define PANEL_SIZE_X	24
 #define PANEL_SIZE_Y	12
 
@@ -49,11 +41,12 @@ public:
 	uint8_t Height();
 
 	void init(uint8_t clk, uint8_t lat, uint8_t oe, uint8_t line_a, uint8_t line_b, uint8_t pin_r, uint8_t pin_g, uint8_t pin_b);
-	void setPanelConfig(uint8_t panels_x, uint8_t panels_y);
 	void drawFrame();
+
 	void setFont(uint8_t w, uint8_t h, const unsigned char * font);
-	bool setCursor(unsigned int x, unsigned int y);
 	void setBrightness(uint8_t brightness);
+
+	bool setCursor(unsigned int x, unsigned int y);
 	void drawPixel(unsigned int x, unsigned int y, Color color);
 	void drawChar(unsigned int x, unsigned int y, char c, Color color);
 	void drawString(unsigned int x, unsigned int y, char *string, Color color);
@@ -88,6 +81,5 @@ private:
 	uint8_t *_frame_buffer_r;
 	uint8_t *_frame_buffer_g;
 	uint8_t *_frame_buffer_b;
-
 };
 

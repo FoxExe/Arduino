@@ -1,6 +1,13 @@
 #include "RGB_Matrix.h"
 
 #define PANEL_SCAN_N	3
+#define abs(a) (((a) < 0) ? -(a) : (a))
+#define swap(a, b)     \
+	{                  \
+		uint8_t t = a; \
+		a = b;         \
+		b = t;         \
+	}
 
 RGB_Matrix::RGB_Matrix(uint8_t width, uint8_t height)
 {

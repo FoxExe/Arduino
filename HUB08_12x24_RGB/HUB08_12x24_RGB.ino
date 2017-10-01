@@ -3,7 +3,10 @@
 	Created:	9/29/2017 8:19:44 PM
 	Author:	Fox
 
-	HUB08 pinouts P13.33-3S-1R1G1B-24X12
+	Panel name: P13.33-3S-1R1G1B-24X12
+	Panel base: 6x JXI5020 for leds and LeadASIC PR4538 as main controller
+	Panel interface: HUB08
+	Pinouts:
 	GND		A
 	GND		B
 	GND		C
@@ -12,17 +15,10 @@
 	B1		RB1
 	GND		LAT
 	GND		CLK
-
-	RGB-565:
-	RRRR RGGG GGGB BBBB
-
-	RGB233
-	RRGG GBBB
-
 */
 
 //#define DEBUG
-#define DEBUG_REPORT 1000
+//#define DEBUG_REPORT 1000
 #define TIMER_DELAY  1000
 
 
@@ -55,47 +51,22 @@ void setup() {
 #endif // DEBUG
 
 	panel.init(PIN_CLK, PIN_LATCH, PIN_OE, PIN_LINE_A, PIN_LINE_B, PIN_RED, PIN_GREEN, PIN_BLUE);
+	panel.setBrightness(50);	// 25 if not set (Default)
 	panel.setFont(5, 8, font5x8);
 
 	/*
 	// Color test pattern
-	panel.drawFillRect(0, 0, 8, 6, panel.COLOR_RED);
-	panel.drawFillRect(8, 0, 8, 6, panel.COLOR_GREEN);
-	panel.drawFillRect(16, 0, 8, 6, panel.COLOR_BLUE);
-	panel.drawFillRect(0, 6, 8, 6, panel.COLOR_CYAN);
-	panel.drawFillRect(8, 6, 8, 6, panel.COLOR_MAGENTA);
-	panel.drawFillRect(16, 6, 8, 6, panel.COLOR_YELLOW);
-	
-	panel.drawFillRect(24, 0, 8, 6, panel.COLOR_RED);
-	panel.drawFillRect(24, 6, 8, 6, panel.COLOR_WHITE);
+	panel.drawFillRect(0, 0, 8, 6, panel.red);
+	panel.drawFillRect(8, 0, 8, 6, panel.green);
+	panel.drawFillRect(16, 0, 8, 6, panel.blue);
+	panel.drawFillRect(0, 6, 8, 6, panel.cyan);
+	panel.drawFillRect(8, 6, 8, 6, panel.magenta);
+	panel.drawFillRect(16, 6, 8, 6, panel.yellow);
 
-	//panel.drawRect(2, 1, 19, 9, panel.COLOR_BLACK);
-
-	//panel.drawChar(3, 2, 'F', panel.COLOR_WHITE);
-	//panel.drawChar(9, 2, 'o', panel.COLOR_WHITE);
-	//panel.drawChar(15, 2, 'X', panel.COLOR_WHITE);
-	//char * str1 = "123";
-	//panel.drawString(0, 0, "1234", panel.COLOR_GREEN);
-	//panel.drawString(24, 0, "456", panel.COLOR_GREEN);
 	*/
+	panel.drawFillRect(0, 0, panel.Width(), panel.Height(), panel.white);	// Turn all pixels ON
+	panel.drawRect(1, 1, PANEL_SIZE_X - 2, PANEL_SIZE_Y - 2, panel.black);
 
-	//panel.drawPixel(0, 0, panel.green);
-	//panel.drawPixel(0, 1, panel.green);
-	//panel.drawPixel(1, 0, panel.green);
-	//panel.drawPixel(25, 3, panel.green);
-	/*
-	panel.drawFillRect(0, 0, 8, PANEL_SIZE_Y, panel.yellow);
-	panel.drawFillRect(8, 0, 8, PANEL_SIZE_Y, panel.magenta);
-	panel.drawFillRect(16, 0, 8, PANEL_SIZE_Y, panel.cyan);
-	panel.drawFillRect(24, 0, 8, PANEL_SIZE_Y, panel.red);
-	panel.drawFillRect(32, 0, 8, PANEL_SIZE_Y, panel.green);
-	panel.drawFillRect(40, 0, 8, PANEL_SIZE_Y, panel.blue);
-	*/
-
-	//panel.drawFillRect(0, 0, PANEL_SIZE_X, PANEL_SIZE_Y, panel.white);
-	//panel.drawPixel(PANEL_SIZE_X - 1, PANEL_SIZE_Y - 1, panel.black);
-
-	//panel.drawRect(1, 1, PANEL_SIZE_X - 2, PANEL_SIZE_Y - 2, panel.black);
 	panel.drawRect(0, 0, panel.Width(), panel.Height(), panel.blue);
 }
 
