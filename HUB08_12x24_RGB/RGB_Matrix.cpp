@@ -1,12 +1,31 @@
 #include "RGB_Matrix.h"
 
-RGB_Matrix::RGB_Matrix()
+#define PANEL_SCAN_N	3
+
+RGB_Matrix::RGB_Matrix(uint8_t width, uint8_t height)
 {
+	_drawSizeX = width;
+	_drawSizeY = height;
+	unsigned int arraySize = width / 8 * height;	// Compress every 8 horisontal pixels to 1 byte (8 bit)
+
+	_frame_buffer_r = new uint8_t[arraySize]{ 0, };
+	_frame_buffer_g = new uint8_t[arraySize]{ 0, };
+	_frame_buffer_b = new uint8_t[arraySize]{ 0, };
 }
 
 
 RGB_Matrix::~RGB_Matrix()
 {
+}
+
+uint8_t RGB_Matrix::Width()
+{
+	return _drawSizeX;
+}
+
+uint8_t RGB_Matrix::Height()
+{
+	return _drawSizeY;
 }
 
 void RGB_Matrix::init(uint8_t clk, uint8_t lat, uint8_t oe, uint8_t line_a, uint8_t line_b, uint8_t pin_r, uint8_t pin_g, uint8_t pin_b)
@@ -42,27 +61,36 @@ void RGB_Matrix::init(uint8_t clk, uint8_t lat, uint8_t oe, uint8_t line_a, uint
 
 void RGB_Matrix::drawFrame()
 {
-	for (uint8_t row = 0; row < PANEL_SCAN_N; row++)
+	uint8_t panel_x = _drawSizeX / 8; // Bacause 8 pixel in one byte
+
+	for (uint8_t scan = 0; scan < PANEL_SCAN_N; scan++)
 	{
 		// Row select
-		digitalWrite(_line_a, !!(row & B00000001));
-		digitalWrite(_line_b, !!(row & B00000010));
+		digitalWrite(_line_a, !!(scan & B00000001));
+		digitalWrite(_line_b, !!(scan & B00000010));
 
-		for (uint8_t block = 0; block < PANEL_SCAN_N; block++)	// 3 blocks
+		for (uint8_t panels_h = 0; panels_h < PANEL_SIZE_Y / 12; panels_h++)
 		{
-			for (uint8_t rowInBlock = 0; rowInBlock < 4; rowInBlock++)
+			for (uint8_t column = panel_x; column > 0; column--)	// 3 blocks
 			{
-				for (uint8_t byte = 0; byte < 8; byte++)	// 8 byte/pixel per chip
+				for (uint8_t row = 0; row < PANEL_SIZE_Y / PANEL_SCAN_N; row++)
 				{
-					int pos = (rowInBlock + 1) * PANEL_SIZE_X / 8 * PANEL_SCAN_N - row * PANEL_SIZE_X / 8 - PANEL_SIZE_X / 8 / PANEL_SCAN_N * block - 1;
+					int pos = panel_x * PANEL_SIZE_Y - column - row * panel_x * PANEL_SCAN_N - (-scan + PANEL_SCAN_N - 1) * panel_x + panels_h * panel_x * PANEL_SIZE_Y;
 
-					digitalWrite(_pin_r, !!(frame_buffer_r[pos] & (1 << byte)));
-					digitalWrite(_pin_g, !!(frame_buffer_g[pos] & (1 << byte)));
-					digitalWrite(_pin_b, !!(frame_buffer_b[pos] & (1 << byte)));
+					//Serial.print(pos);
+					//Serial.print(F(", "));
 
-					digitalWrite(_clk, HIGH);
-					digitalWrite(_clk, LOW);
+					for (uint8_t byte = 0; byte < 8; byte++)	// 8 byte/pixel per chip
+					{
+						digitalWrite(_pin_r, !!(_frame_buffer_r[pos] & (1 << byte)));
+						digitalWrite(_pin_g, !!(_frame_buffer_g[pos] & (1 << byte)));
+						digitalWrite(_pin_b, !!(_frame_buffer_b[pos] & (1 << byte)));
+
+						digitalWrite(_clk, HIGH);
+						digitalWrite(_clk, LOW);
+					}
 				}
+				//Serial.println();
 			}
 		}
 
@@ -74,6 +102,7 @@ void RGB_Matrix::drawFrame()
 		delayMicroseconds(_brightness);
 		digitalWrite(_oe, HIGH);
 	}
+	//Serial.println(F("--------------------------"));
 }
 
 void RGB_Matrix::setFont(uint8_t w, uint8_t h, const unsigned char * font)
@@ -85,7 +114,7 @@ void RGB_Matrix::setFont(uint8_t w, uint8_t h, const unsigned char * font)
 
 bool RGB_Matrix::setCursor(unsigned int x, unsigned int y)
 {
-	if ((x >= PANEL_SIZE_X) || (y >= PANEL_SIZE_Y))
+	if ((x >= _drawSizeX) || (y >= _drawSizeY))
 		return false;
 	else {
 		_cursor_x = x;
@@ -100,32 +129,32 @@ void RGB_Matrix::setBrightness(uint8_t brightness)
 	_brightness = brightness;
 }
 
-void RGB_Matrix::drawPixel(unsigned int x, unsigned int y, Colors color)
+void RGB_Matrix::drawPixel(unsigned int x, unsigned int y, Color color)
 {
-	int position = x / 8 + (y * PANEL_SIZE_X / 8);
+	int position = y * _drawSizeX / 8 + x / 8;
 
-	if (!!(color & COLOR_RED))
-		frame_buffer_r[position] |= B10000000 >> x % 8;
+	if (!!(color & red))
+		_frame_buffer_r[position] |= B00000001 << x % 8;
 	else
-		frame_buffer_r[position] &= ~B10000000 >> x % 8;
+		_frame_buffer_r[position] &= ~(B00000001 << x % 8);
 
-	if (!!(color & COLOR_GREEN))
-		frame_buffer_g[position] |= B10000000 >> x % 8;
+	if (!!(color & green))
+		_frame_buffer_g[position] |= B00000001 << x % 8;
 	else
-		frame_buffer_g[position] &= ~B10000000 >> x % 8;
+		_frame_buffer_g[position] &= ~(B00000001 << x % 8);
 
-	if (!!(color & COLOR_BLUE))
-		frame_buffer_b[position] |= B10000000 >> x % 8;
+	if (!!(color & blue))
+		_frame_buffer_b[position] |= B00000001 << x % 8;
 	else
-		frame_buffer_b[position] &= ~B10000000 >> x % 8;
+		_frame_buffer_b[position] &= ~(B00000001 << x % 8);
 }
 
-void RGB_Matrix::drawChar(unsigned int x, unsigned int y, char c, Colors color)
+void RGB_Matrix::drawChar(unsigned int x, unsigned int y, char c, Color color)
 {
-	if ((y + _font.char_height) >= PANEL_SIZE_Y)
+	if ((y + _font.char_height) >= _drawSizeY)
 		return;
 
-	if ((x + _font.char_width) >= PANEL_SIZE_X)
+	if ((x + _font.char_width) >= _drawSizeX)
 		return;
 
 	uint8_t i, j;
@@ -135,13 +164,13 @@ void RGB_Matrix::drawChar(unsigned int x, unsigned int y, char c, Colors color)
 		uint8_t j;
 		for (j = 0; j < 8; j++)
 		{
-			if (d & _BV(j))
+			if (d & (B00000001 << j))
 			{
 				drawPixel(x + i, y + j, color);
 			}
 			else
 			{
-				drawPixel(x + i, y + j, COLOR_BLACK);
+				drawPixel(x + i, y + j, black);
 			}
 		}
 	}
@@ -149,11 +178,11 @@ void RGB_Matrix::drawChar(unsigned int x, unsigned int y, char c, Colors color)
 	// Add bottom padding (Horisontal blank line)
 	for (j = 0; j < 8; j++)
 	{
-		drawPixel(x + _font.char_width, y + j, COLOR_BLACK);
+		drawPixel(x + _font.char_width, y + j, black);
 	}
 }
 
-void RGB_Matrix::drawString(unsigned int x, unsigned int y, const char *string, Colors color)
+void RGB_Matrix::drawString(unsigned int x, unsigned int y, const char *string, Color color)
 {
 	if (!setCursor(x, y))
 		return;
@@ -167,7 +196,7 @@ void RGB_Matrix::drawString(unsigned int x, unsigned int y, const char *string, 
 	}
 }
 
-void RGB_Matrix::drawString(unsigned int x, unsigned int y, char *string, Colors color)
+void RGB_Matrix::drawString(unsigned int x, unsigned int y, char *string, Color color)
 {
 	if (!setCursor(x, y))
 		return;
@@ -178,13 +207,13 @@ void RGB_Matrix::drawString(unsigned int x, unsigned int y, char *string, Colors
 	}
 }
 
-void RGB_Matrix::_drawChar(char c, Colors color)
+void RGB_Matrix::_drawChar(char c, Color color)
 {
 	if (c == '\n' || c == '\r')
 	{
 		_cursor_x = 0;
 		_cursor_y += _font.char_height;
-		if (_cursor_y > PANEL_SIZE_Y)
+		if (_cursor_y > _drawSizeY)
 			_cursor_y = 0;
 	}
 	else
@@ -192,18 +221,18 @@ void RGB_Matrix::_drawChar(char c, Colors color)
 		drawChar(_cursor_x, _cursor_y, c, color);
 		_cursor_x += _font.char_width + 1;
 
-		if (_cursor_x + _font.char_width > PANEL_SIZE_X)
+		if (_cursor_x + _font.char_width > _drawSizeX)
 		{
 			_cursor_x = 0;
 			_cursor_y += _font.char_height;
 		}
-		if (_cursor_y > PANEL_SIZE_Y)
+		if (_cursor_y > _drawSizeY)
 			_cursor_y = 0;
 	}
 }
 
 
-void RGB_Matrix::drawLine(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2, Colors color)
+void RGB_Matrix::drawLine(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2, Color color)
 {
 	uint8_t steep = abs(y2 - y1) > abs(x2 - x1);
 	if (steep)
@@ -253,7 +282,7 @@ void RGB_Matrix::drawLine(unsigned int x1, unsigned int y1, unsigned int x2, uns
 	}
 }
 
-void RGB_Matrix::drawRect(unsigned int x, unsigned int y, unsigned int w, unsigned int h, Colors color)
+void RGB_Matrix::drawRect(unsigned int x, unsigned int y, unsigned int w, unsigned int h, Color color)
 {
 	uint8_t i;
 	for (i = x; i < x + w; i++)
@@ -268,19 +297,19 @@ void RGB_Matrix::drawRect(unsigned int x, unsigned int y, unsigned int w, unsign
 	}
 }
 
-void RGB_Matrix::drawFillRect(unsigned int x, unsigned int y, unsigned int w, unsigned int h, Colors color)
+void RGB_Matrix::drawFillRect(unsigned int x, unsigned int y, unsigned int w, unsigned int h, Color color)
 {
-	uint8_t i, j;
-	for (i = x; i < x + w; i++)
+	uint8_t row, col;
+	for (row = y; row < y + h; row++)
 	{
-		for (j = y; j < y + h; j++)
+		for (col = x; col < x + w; col++)
 		{
-			drawPixel(i, j, color);
+			drawPixel(col, row, color);
 		}
 	}
 }
 
-void RGB_Matrix::drawCircle(unsigned int x, unsigned int y, unsigned int r, Colors color)
+void RGB_Matrix::drawCircle(unsigned int x, unsigned int y, unsigned int r, Color color)
 {
 	int8_t f = 1 - r;
 	int8_t ddF_x = 1;
@@ -317,7 +346,7 @@ void RGB_Matrix::drawCircle(unsigned int x, unsigned int y, unsigned int r, Colo
 	}
 }
 
-void RGB_Matrix::drawFillCircle(unsigned int x, unsigned int y, unsigned int r, Colors color)
+void RGB_Matrix::drawFillCircle(unsigned int x, unsigned int y, unsigned int r, Color color)
 {
 	int8_t f = 1 - r;
 	int8_t ddF_x = 1;
@@ -354,4 +383,33 @@ void RGB_Matrix::drawFillCircle(unsigned int x, unsigned int y, unsigned int r, 
 			drawPixel(x - tmp_y, i, color);
 		}
 	}
+}
+
+void RGB_Matrix::dumpBuffer(char color)
+{
+	Serial.println(F("################"));
+
+	uint8_t x_size = _drawSizeX / 8;
+	for (uint8_t row = 0; row < _drawSizeY; row++)
+	{
+		for (uint8_t col = 0; col < x_size; col++)
+		{
+			for (uint8_t byte = 0; byte < 8; byte++)
+			{
+				//Serial.print(color);
+				switch (color)
+				{
+					case 'r': Serial.print(!!(_frame_buffer_r[col + x_size * row] & (1 << byte))); break;
+					case 'g': Serial.print(!!(_frame_buffer_g[col + x_size * row] & (1 << byte))); break;
+					case 'b': Serial.print(!!(_frame_buffer_b[col + x_size * row] & (1 << byte))); break;
+					default: break;
+				}
+				
+			}
+			
+		}
+		Serial.println();
+	}
+
+	Serial.println(F("\n################"));
 }

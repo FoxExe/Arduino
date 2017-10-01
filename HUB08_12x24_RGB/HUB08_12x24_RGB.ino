@@ -38,7 +38,7 @@
 #define PIN_GREEN	6
 #define PIN_BLUE	7
 
-RGB_Matrix panel;
+RGB_Matrix panel(PANEL_SIZE_X * 2, PANEL_SIZE_Y);	// Panels size
 
 #ifdef DEBUG
 unsigned long fps_delay = DEBUG_REPORT;
@@ -57,6 +57,7 @@ void setup() {
 	panel.init(PIN_CLK, PIN_LATCH, PIN_OE, PIN_LINE_A, PIN_LINE_B, PIN_RED, PIN_GREEN, PIN_BLUE);
 	panel.setFont(5, 8, font5x8);
 
+	/*
 	// Color test pattern
 	panel.drawFillRect(0, 0, 8, 6, panel.COLOR_RED);
 	panel.drawFillRect(8, 0, 8, 6, panel.COLOR_GREEN);
@@ -65,6 +66,9 @@ void setup() {
 	panel.drawFillRect(8, 6, 8, 6, panel.COLOR_MAGENTA);
 	panel.drawFillRect(16, 6, 8, 6, panel.COLOR_YELLOW);
 	
+	panel.drawFillRect(24, 0, 8, 6, panel.COLOR_RED);
+	panel.drawFillRect(24, 6, 8, 6, panel.COLOR_WHITE);
+
 	//panel.drawRect(2, 1, 19, 9, panel.COLOR_BLACK);
 
 	//panel.drawChar(3, 2, 'F', panel.COLOR_WHITE);
@@ -72,14 +76,35 @@ void setup() {
 	//panel.drawChar(15, 2, 'X', panel.COLOR_WHITE);
 	//char * str1 = "123";
 	//panel.drawString(0, 0, "1234", panel.COLOR_GREEN);
+	//panel.drawString(24, 0, "456", panel.COLOR_GREEN);
+	*/
 
+	//panel.drawPixel(0, 0, panel.green);
+	//panel.drawPixel(0, 1, panel.green);
+	//panel.drawPixel(1, 0, panel.green);
+	//panel.drawPixel(25, 3, panel.green);
+	/*
+	panel.drawFillRect(0, 0, 8, PANEL_SIZE_Y, panel.yellow);
+	panel.drawFillRect(8, 0, 8, PANEL_SIZE_Y, panel.magenta);
+	panel.drawFillRect(16, 0, 8, PANEL_SIZE_Y, panel.cyan);
+	panel.drawFillRect(24, 0, 8, PANEL_SIZE_Y, panel.red);
+	panel.drawFillRect(32, 0, 8, PANEL_SIZE_Y, panel.green);
+	panel.drawFillRect(40, 0, 8, PANEL_SIZE_Y, panel.blue);
+	*/
+
+	//panel.drawFillRect(0, 0, PANEL_SIZE_X, PANEL_SIZE_Y, panel.white);
+	//panel.drawPixel(PANEL_SIZE_X - 1, PANEL_SIZE_Y - 1, panel.black);
+
+	//panel.drawRect(1, 1, PANEL_SIZE_X - 2, PANEL_SIZE_Y - 2, panel.black);
+	panel.drawRect(0, 0, panel.Width(), panel.Height(), panel.blue);
 }
 
 void loop() {
 
 	if (millis() > timer_delay) {
-		char buffer[4];
-		panel.drawString(0, 0, itoa(millis() / 1000, buffer, 10), panel.COLOR_GREEN);
+		char buffer[8];
+		panel.drawString(12, 2, itoa(millis() / 1000, buffer, 10), panel.white);
+
 		timer_delay = millis() + TIMER_DELAY - (millis() % TIMER_DELAY);
 	}
 
@@ -103,8 +128,9 @@ void loop() {
 		Serial.print(millis() / 1000);
 		Serial.print(F(" sec\n"));
 
-		char buffer[4];
-		panel.drawString(0, 0, itoa(millis() / 1000, buffer, 10), panel.COLOR_GREEN);
+		//panel.dumpBuffer('r');	// DEBUG
+		//panel.dumpBuffer('g');	// DEBUG
+		panel.dumpBuffer('b');	// DEBUG
 
 		fps_count = 0;
 		fps_delay = millis() + DEBUG_REPORT - (millis() % DEBUG_REPORT);	// Better delay. ~1 second.
