@@ -56,6 +56,7 @@ public:
 	void setBrightness(uint8_t brightness);
 	void drawPixel(unsigned int x, unsigned int y, Colors color);
 	void drawChar(unsigned int x, unsigned int y, char c, Colors color);
+	void drawString(unsigned int x, unsigned int y, char *string, Colors color);
 	void drawString(unsigned int x, unsigned int y, const char *string, Colors color);
 	void drawImage(unsigned int x, unsigned int y, unsigned int w, unsigned int h, char * bitmap, Colors color);
 
@@ -77,6 +78,8 @@ private:
 
 	unsigned int _cursor_x;
 	unsigned int _cursor_y;
+
+	void _drawChar(char c, Colors color);
 
 	uint8_t frame_buffer_r[PANEL_SIZE_X * PANEL_SIZE_Y / 8];
 	uint8_t frame_buffer_g[PANEL_SIZE_X * PANEL_SIZE_Y / 8];

@@ -107,9 +107,6 @@ void RGB_Matrix::setBrightness(uint8_t brightness)
 
 void RGB_Matrix::drawPixel(unsigned int x, unsigned int y, Colors color)
 {
-	if (!setCursor(x, y))
-		return;
-
 	int position = x / 8 + (y * PANEL_SIZE_X / 8);
 
 	if (!!(color & COLOR_RED))
@@ -130,9 +127,6 @@ void RGB_Matrix::drawPixel(unsigned int x, unsigned int y, Colors color)
 
 void RGB_Matrix::drawChar(unsigned int x, unsigned int y, char c, Colors color)
 {
-	if (!setCursor(x, y))
-		return;
-
 	if ((y + _font.char_height) >= PANEL_SIZE_Y)
 		return;
 
@@ -166,27 +160,53 @@ void RGB_Matrix::drawChar(unsigned int x, unsigned int y, char c, Colors color)
 
 void RGB_Matrix::drawString(unsigned int x, unsigned int y, const char *string, Colors color)
 {
-	if (setCursor(x, y))
+	if (!setCursor(x, y))
 		return;
 
-	while (*string != '\0') {
-
-		if (*string == '\n' || *string == '\r' || (_cursor_x + _font.char_width) > PANEL_SIZE_X)
-		{
-			_cursor_y += _font.char_height;
-			_cursor_x = 0;
-			if (_cursor_y + _font.char_height > PANEL_SIZE_Y) {
-				_cursor_x = PANEL_SIZE_X - 1;
-				_cursor_y = PANEL_SIZE_Y - 1;
-				return;
-			}
-		}
-		else {
-			drawChar(0, 0, *string, color);
-			_cursor_x += _font.char_width;
-		}
+	while (1)
+	{
+		char c = (*string++);
+		if (!c)
+			return;
+		_drawChar(c, color);
 	}
 }
+
+void RGB_Matrix::drawString(unsigned int x, unsigned int y, char *string, Colors color)
+{
+	if (!setCursor(x, y))
+		return;
+
+	while (*string)
+	{
+		_drawChar(*string++, color);
+	}
+}
+
+void RGB_Matrix::_drawChar(char c, Colors color)
+{
+	if (c == '\n' || c == '\r')
+	{
+		_cursor_x = 0;
+		_cursor_y += _font.char_height;
+		if (_cursor_y > PANEL_SIZE_Y)
+			_cursor_y = 0;
+	}
+	else
+	{
+		drawChar(_cursor_x, _cursor_y, c, color);
+		_cursor_x += _font.char_width + 1;
+
+		if (_cursor_x + _font.char_width > PANEL_SIZE_X)
+		{
+			_cursor_x = 0;
+			_cursor_y += _font.char_height;
+		}
+		if (_cursor_y > PANEL_SIZE_Y)
+			_cursor_y = 0;
+	}
+}
+
 
 void RGB_Matrix::drawLine(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2, Colors color)
 {
@@ -299,5 +319,44 @@ void RGB_Matrix::drawCircle(unsigned int x, unsigned int y, unsigned int r, Colo
 		drawPixel(x - tmp_y, y + tmp_x, color);
 		drawPixel(x + tmp_y, y - tmp_x, color);
 		drawPixel(x - tmp_y, y - tmp_x, color);
+	}
+}
+
+void RGB_Matrix::drawFillCircle(unsigned int x, unsigned int y, unsigned int r, Colors color)
+{
+	int8_t f = 1 - r;
+	int8_t ddF_x = 1;
+	int8_t ddF_y = -2 * r;
+	int8_t tmp_x = 0;
+	int8_t tmp_y = r;
+	uint8_t i;
+
+	for (i = y - r; i <= y + r; i++)
+	{
+		drawPixel(x, i, color);
+	}
+
+	while (tmp_x < tmp_y)
+	{
+		if (f >= 0)
+		{
+			tmp_y--;
+			ddF_y += 2;
+			f += ddF_y;
+		}
+		tmp_x++;
+		ddF_x += 2;
+		f += ddF_x;
+
+		for (i = y - tmp_y; i <= y + tmp_y; i++)
+		{
+			drawPixel(x + tmp_x, i, color);
+			drawPixel(x - tmp_x, i, color);
+		}
+		for (i = y - tmp_x; i <= y + tmp_x; i++)
+		{
+			drawPixel(x + tmp_y, i, color);
+			drawPixel(x - tmp_y, i, color);
+		}
 	}
 }

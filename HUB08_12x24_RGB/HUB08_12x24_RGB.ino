@@ -61,12 +61,13 @@ void setup() {
 	panel.drawFillRect(8, 6, 8, 6, panel.COLOR_MAGENTA);
 	panel.drawFillRect(16, 6, 8, 6, panel.COLOR_YELLOW);
 	
-	panel.drawRect(2, 1, 19, 9, panel.COLOR_BLACK);
+	//panel.drawRect(2, 1, 19, 9, panel.COLOR_BLACK);
 
-	panel.drawChar(3, 2, 'F', panel.COLOR_WHITE);
-	panel.drawChar(9, 2, 'o', panel.COLOR_WHITE);
-	panel.drawChar(15, 2, 'X', panel.COLOR_WHITE);
-	//panel.drawString(0, 0, F("ABC"), panel.COLOR_GREEN);
+	//panel.drawChar(3, 2, 'F', panel.COLOR_WHITE);
+	//panel.drawChar(9, 2, 'o', panel.COLOR_WHITE);
+	//panel.drawChar(15, 2, 'X', panel.COLOR_WHITE);
+	//char * str1 = "123";
+	//panel.drawString(0, 0, "1234", panel.COLOR_GREEN);
 
 }
 
@@ -88,6 +89,9 @@ void loop() {
 		Serial.print(F(" ms. Uptime: "));
 		Serial.print(millis() / 1000);
 		Serial.print(F(" sec\n"));
+		char buffer[4];
+
+		panel.drawString(0, 0, itoa(millis() / 1000, buffer, 10), panel.COLOR_GREEN);
 
 		fps_count = 0;
 		fps_delay = millis() + DEBUG_REPORT - (millis() % DEBUG_REPORT);	// Better delay. ~1 second.
