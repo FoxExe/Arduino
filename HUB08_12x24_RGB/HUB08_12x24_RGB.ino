@@ -15,24 +15,36 @@
 	B1		RB1
 	GND		LAT
 	GND		CLK
+
+	~470 FPS with 1 module
+	~248 FPS with 2 modules
+
+	TODO:
+	 * Draw frame by timer (in interrupt).
+	 * Option: When we have some work - swith update frame to interrupt mode, but dont send data, only A/B/OE swith
+	 * Add back buffer?
+	 * Add more colors (RGB565 format for 65535 colors). How to do that?
 */
 
 //#define DEBUG
-//#define DEBUG_REPORT 1000
+#define DEBUG_REPORT 1000
 #define TIMER_DELAY  1000
 
 
 #include "RGB_Matrix.h"
 #include "font.h"
 
-#define PIN_CLK		3
-#define PIN_LATCH	4
-#define PIN_OE		5
-#define PIN_LINE_A	10
-#define PIN_LINE_B	9
+#include <RTClib.h>
+RTC_Millis rtc;
+
+#define PIN_OE		13
+#define PIN_CLK		12
+#define PIN_LATCH	11
+#define PIN_LINE_A	7
+#define PIN_LINE_B	6
 #define PIN_RED		8
-#define PIN_GREEN	6
-#define PIN_BLUE	7
+#define PIN_GREEN	9
+#define PIN_BLUE	10
 
 RGB_Matrix panel(PANEL_SIZE_X * 2, PANEL_SIZE_Y);	// Panels size
 
@@ -50,8 +62,9 @@ void setup() {
 	Serial.begin(115200);
 #endif // DEBUG
 
-	panel.init(PIN_CLK, PIN_LATCH, PIN_OE, PIN_LINE_A, PIN_LINE_B, PIN_RED, PIN_GREEN, PIN_BLUE);
-	panel.setBrightness(50);	// 25 if not set (Default)
+	//panel.init(PIN_CLK, PIN_LATCH, PIN_OE, PIN_LINE_A, PIN_LINE_B, PIN_RED, PIN_GREEN, PIN_BLUE);
+	panel.init();
+	panel.setBrightness(20);	// 25 if not set (Default)
 	panel.setFont(5, 8, font5x8);
 
 	/*
@@ -64,17 +77,25 @@ void setup() {
 	panel.drawFillRect(16, 6, 8, 6, panel.yellow);
 
 	*/
-	panel.drawFillRect(0, 0, panel.Width(), panel.Height(), panel.white);	// Turn all pixels ON
-	panel.drawRect(1, 1, PANEL_SIZE_X - 2, PANEL_SIZE_Y - 2, panel.black);
+	//panel.drawFillRect(0, 0, panel.Width(), panel.Height(), panel.red);	// Turn all pixels ON
+	//panel.drawRect(1, 1, panel.Width() - 2, panel.Height() - 2, panel.black);
 
 	panel.drawRect(0, 0, panel.Width(), panel.Height(), panel.blue);
+
+	// Set date/time to scketch upload date
+	rtc.begin(DateTime(F(__DATE__), F(__TIME__)));
 }
 
 void loop() {
 
 	if (millis() > timer_delay) {
+		//char buffer[8];
+		//panel.drawString(12, 2, itoa(millis() / 1000, buffer, 10), panel.green);
+
+		DateTime now = rtc.now();
 		char buffer[8];
-		panel.drawString(12, 2, itoa(millis() / 1000, buffer, 10), panel.white);
+		sprintf(buffer, "%02d:%02d:%02d", now.hour(), now.minute(), now.second());
+		panel.drawString(0, 2, buffer, panel.green);
 
 		timer_delay = millis() + TIMER_DELAY - (millis() % TIMER_DELAY);
 	}
@@ -101,7 +122,7 @@ void loop() {
 
 		//panel.dumpBuffer('r');	// DEBUG
 		//panel.dumpBuffer('g');	// DEBUG
-		panel.dumpBuffer('b');	// DEBUG
+		//panel.dumpBuffer('b');	// DEBUG
 
 		fps_count = 0;
 		fps_delay = millis() + DEBUG_REPORT - (millis() % DEBUG_REPORT);	// Better delay. ~1 second.

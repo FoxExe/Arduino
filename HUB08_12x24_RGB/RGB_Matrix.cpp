@@ -1,7 +1,8 @@
 #include "RGB_Matrix.h"
 
 #define PANEL_SCAN_N	3
-//#define abs(a) (((a) < 0) ? -(a) : (a))	// Already set in Arduino core lib
+#define BitSetFast(b, num, val) { b ^= (-val ^ b) & (1 << num); }
+
 #define swap(a, b)     \
 	{                  \
 		uint8_t t = a; \
@@ -35,8 +36,11 @@ uint8_t RGB_Matrix::Height()
 	return _drawSizeY;
 }
 
-void RGB_Matrix::init(uint8_t clk, uint8_t lat, uint8_t oe, uint8_t line_a, uint8_t line_b, uint8_t pin_r, uint8_t pin_g, uint8_t pin_b)
+//void RGB_Matrix::init(uint8_t clk, uint8_t lat, uint8_t oe, uint8_t line_a, uint8_t line_b, uint8_t pin_r, uint8_t pin_g, uint8_t pin_b)
+void RGB_Matrix::init()
 {
+	/*
+	
 	_clk = clk;
 	_lat = lat;
 	_oe = oe;
@@ -45,6 +49,17 @@ void RGB_Matrix::init(uint8_t clk, uint8_t lat, uint8_t oe, uint8_t line_a, uint
 	_pin_r = pin_r;
 	_pin_g = pin_g;
 	_pin_b = pin_b;
+	*/
+
+	_clk = 12;
+	_lat = 11;
+	_oe = 13;
+	_line_a = 7;
+	_line_b = 6;
+	_pin_r = 8;
+	_pin_g = 9;
+	_pin_b = 10;
+
 
 	// Configure ports
 	// TODO: Use registers for speed!
@@ -64,6 +79,15 @@ void RGB_Matrix::init(uint8_t clk, uint8_t lat, uint8_t oe, uint8_t line_a, uint
 	digitalWrite(_oe, HIGH);
 	digitalWrite(_lat, LOW);
 	digitalWrite(_clk, LOW);
+
+	// PORTB = Ports: -, -, 13, 12, 11, 10, 9, 8	(Digital)
+	// PORTC = Ports: -, -, A5, A4, A3, A2, A1, A0	(Analog)
+	// PORTD = Ports: 7, 6, 5, 4, 3, 2, 1, 0		(Digital)
+	// DDRB -> Data Direction Register B (Set Input/Output mode)
+	//DDRD  |= B11000000;		// Set 6 and 7 to output
+	//PORTD &= ~B11000000;	// Set 6 and 7 LOW
+	//DDRB  = B00111111;		// Set 13 to 8 output
+	//PORTB = B00100000;		// Set OE to HIGH (Because its inverted)
 }
 
 void RGB_Matrix::drawFrame()
@@ -84,32 +108,42 @@ void RGB_Matrix::drawFrame()
 				{
 					int pos = panel_x * PANEL_SIZE_Y - column - row * panel_x * PANEL_SCAN_N - (-scan + PANEL_SCAN_N - 1) * panel_x + panels_h * panel_x * PANEL_SIZE_Y;
 
-					//Serial.print(pos);
-					//Serial.print(F(", "));
-
 					for (uint8_t byte = 0; byte < 8; byte++)	// 8 byte/pixel per chip
 					{
-						digitalWrite(_pin_r, !!(_frame_buffer_r[pos] & (1 << byte)));
-						digitalWrite(_pin_g, !!(_frame_buffer_g[pos] & (1 << byte)));
-						digitalWrite(_pin_b, !!(_frame_buffer_b[pos] & (1 << byte)));
+						uint8_t pos2 = 1 << byte;
+						//digitalWrite(_pin_r, !!(_frame_buffer_r[pos] & pos2));
+						//digitalWrite(_pin_g, !!(_frame_buffer_g[pos] & pos2));
+						//digitalWrite(_pin_b, !!(_frame_buffer_b[pos] & pos2));
+						BitSetFast(PORTB, 0, !!(_frame_buffer_r[pos] & pos2));
+						BitSetFast(PORTB, 1, !!(_frame_buffer_g[pos] & pos2));
+						BitSetFast(PORTB, 2, !!(_frame_buffer_b[pos] & pos2));
 
-						digitalWrite(_clk, HIGH);
-						digitalWrite(_clk, LOW);
+
+						// Clock pin HIGH, LOW
+						PORTB |= B00010000;
+						PORTB &= ~B00010000;
 					}
 				}
-				//Serial.println();
 			}
 		}
 
 		// update frame
-		digitalWrite(_lat, HIGH);
-		digitalWrite(_lat, LOW);
+		//digitalWrite(_lat, HIGH);
+		//digitalWrite(_lat, LOW);
 
-		digitalWrite(_oe, LOW);
+		// Latch pin HIGH, LOW
+		PORTB |= B00001000;
+		PORTB &= ~B00001000;
+
+		//digitalWrite(_oe, LOW);
+
+		// OE pin LOW, HIGH (Inverted)
+		PORTB &= ~B00100000;
 		delayMicroseconds(_brightness);
-		digitalWrite(_oe, HIGH);
+		PORTB |= B00100000;
+
+		//digitalWrite(_oe, HIGH);
 	}
-	//Serial.println(F("--------------------------"));
 }
 
 void RGB_Matrix::setFont(uint8_t w, uint8_t h, const unsigned char * font)

@@ -40,7 +40,8 @@ public:
 	uint8_t Width();
 	uint8_t Height();
 
-	void init(uint8_t clk, uint8_t lat, uint8_t oe, uint8_t line_a, uint8_t line_b, uint8_t pin_r, uint8_t pin_g, uint8_t pin_b);
+	//void init(uint8_t clk, uint8_t lat, uint8_t oe, uint8_t line_a, uint8_t line_b, uint8_t pin_r, uint8_t pin_g, uint8_t pin_b);
+	void init();
 	void drawFrame();
 
 	void setFont(uint8_t w, uint8_t h, const unsigned char * font);
