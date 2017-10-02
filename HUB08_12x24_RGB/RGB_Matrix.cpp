@@ -1,7 +1,7 @@
 #include "RGB_Matrix.h"
 
 #define PANEL_SCAN_N	3
-#define abs(a) (((a) < 0) ? -(a) : (a))
+//#define abs(a) (((a) < 0) ? -(a) : (a))	// Already set in Arduino core lib
 #define swap(a, b)     \
 	{                  \
 		uint8_t t = a; \
@@ -76,7 +76,7 @@ void RGB_Matrix::drawFrame()
 		digitalWrite(_line_a, !!(scan & B00000001));
 		digitalWrite(_line_b, !!(scan & B00000010));
 
-		for (uint8_t panels_h = 0; panels_h < PANEL_SIZE_Y / 12; panels_h++)
+		for (uint8_t panels_h = 0; panels_h < _drawSizeY / PANEL_SIZE_Y; panels_h++)
 		{
 			for (uint8_t column = panel_x; column > 0; column--)	// 3 blocks
 			{
